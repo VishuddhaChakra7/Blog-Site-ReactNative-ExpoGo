@@ -1,6 +1,13 @@
 // src/screens/RegisterScreen.js
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+} from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../config/firebase";
 
@@ -15,43 +22,82 @@ export default function RegisterScreen({ navigation }) {
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      console.log("✅ Registered successfully");
+      await createUserWithEmailAndPassword(auth, email.trim(), password);
+      Alert.alert("Registration Successful 🎉");
+      navigation.replace("Home"); // go to Home after successful registration
     } catch (error) {
-      Alert.alert("Registration Error", error.message);
+      console.log("Registration error:", error);
+      Alert.alert("Registration Failed", error.message);
     }
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", padding: 20 }}>
-      <Text style={{ fontSize: 28, fontWeight: "bold", marginBottom: 20 }}>
-        Register
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Register</Text>
 
       <TextInput
         placeholder="Email"
+        style={styles.input}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+        keyboardType="email-address"
       />
 
       <TextInput
         placeholder="Password"
+        style={styles.input}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
       />
 
-      <Button title="Register" onPress={handleRegister} />
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <Text style={styles.buttonText}>Register</Text>
+      </TouchableOpacity>
 
-      <Text
-        onPress={() => navigation.navigate("Login")}
-        style={{ color: "blue", marginTop: 15, textAlign: "center" }}
-      >
-        Already have an account? Login
-      </Text>
+      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+        <Text style={styles.link}>Already have an account? Login</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 30,
+  },
+  input: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+  },
+  button: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    borderRadius: 8,
+    width: "100%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  link: {
+    marginTop: 20,
+    color: "#007AFF",
+  },
+});

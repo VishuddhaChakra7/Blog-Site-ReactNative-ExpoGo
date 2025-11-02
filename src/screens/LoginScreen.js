@@ -1,12 +1,37 @@
 // src/screens/LoginScreen.js
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../config/firebase";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  // ✅ Auto-login check
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is already logged in → go to Home
+        navigation.replace("Home");
+      } else {
+        // No user → show login form
+        setLoading(false);
+      }
+    });
+
+    // Cleanup listener on unmount
+    return unsubscribe;
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -17,12 +42,22 @@ export default function LoginScreen({ navigation }) {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       Alert.alert("Login successful 🎉");
-      navigation.replace("Home"); // ✅ navigate to Home after successful login
+      navigation.replace("Home");
     } catch (error) {
       console.log("Login error:", error);
       Alert.alert("Login Failed", error.message);
     }
   };
+
+  // ✅ Show loading spinner while checking user state
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={{ marginTop: 10 }}>Checking login status...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -92,5 +127,10 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 20,
     color: "#007AFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
