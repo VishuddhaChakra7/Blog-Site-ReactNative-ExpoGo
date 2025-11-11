@@ -1,13 +1,12 @@
-// src/screens/HomeScreen.js
 import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   FlatList,
-  Image,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../config/firebase";
 
@@ -39,10 +38,6 @@ export default function HomeScreen() {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      {item.imageUrl ? (
-        <Image source={{ uri: item.imageUrl }} style={styles.image} />
-      ) : null}
-
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.author}>by {item.author}</Text>
       <Text style={styles.content}>{item.content}</Text>
@@ -53,27 +48,45 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 15 }}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      {posts.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>
+            No posts yet. Create your first blog! 📝
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  listContent: {
+    paddingHorizontal: 15,
+    paddingTop: 20, // ✅ fix: adds space from top so first post isn’t hidden
+    paddingBottom: 10,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "gray",
+    textAlign: "center",
   },
   card: {
     backgroundColor: "#fff",
@@ -86,12 +99,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
-  },
-  image: {
-    width: "100%",
-    height: 180,
-    borderRadius: 10,
-    marginBottom: 10,
   },
   title: {
     fontSize: 18,

@@ -4,75 +4,49 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   Alert,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { auth, db, storage } from "../config/firebase";
+import { auth, db } from "../config/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function WriteScreen() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 📸 Pick image
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
-  };
-
-  // 🚀 Upload and create post
   const handlePost = async () => {
-    if (!title || !content) {
-      Alert.alert("Missing fields", "Please enter both title and content");
+    if (!title.trim() || !content.trim()) {
+      Alert.alert("Missing fields", "Please enter both title and content.");
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "You must be logged in to post.");
       return;
     }
 
     setLoading(true);
-
     try {
-      let imageUrl = null;
-
-      // 🖼️ Upload image if present
-      if (image) {
-        const response = await fetch(image);
-        const blob = await response.blob();
-        const storageRef = ref(storage, `posts/${Date.now()}.jpg`);
-        await uploadBytes(storageRef, blob);
-        imageUrl = await getDownloadURL(storageRef);
-      }
-
-      // 📝 Add blog post to Firestore
       await addDoc(collection(db, "posts"), {
-        title,
-        content,
-        imageUrl,
-        author: auth.currentUser?.email || "Unknown",
+        title: title.trim(),
+        content: content.trim(),
+        author: user.email,
         createdAt: serverTimestamp(),
       });
 
-      Alert.alert("Success", "Blog post uploaded 🎉");
+      Alert.alert("✅ Success", "Blog post uploaded!");
       setTitle("");
       setContent("");
-      setImage(null);
     } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "Failed to upload post");
+      console.error("Post error:", error);
+      Alert.alert("Error", "Failed to upload post.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -94,20 +68,16 @@ export default function WriteScreen() {
         multiline
       />
 
-      {image && <Image source={{ uri: image }} style={styles.preview} />}
-
-      <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-        <Text style={styles.imageButtonText}>📷 Choose Image</Text>
-      </TouchableOpacity>
-
       <TouchableOpacity
         style={[styles.button, loading && { opacity: 0.7 }]}
         onPress={handlePost}
         disabled={loading}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Uploading..." : "Post Blog"}
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Post Blog</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -133,21 +103,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
-  },
-  preview: {
-    width: "100%",
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  imageButton: {
-    backgroundColor: "#ddd",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  imageButtonText: {
-    fontWeight: "500",
   },
   button: {
     backgroundColor: "#007AFF",
